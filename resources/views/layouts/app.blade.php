@@ -186,6 +186,26 @@ body{background:var(--bg);font-family:var(--font-body);color:var(--text);min-hei
 .spec-label{font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;font-family:var(--font-display);margin-bottom:4px}
 .spec-val{font-size:14px;font-weight:600;color:var(--text)}
 
+/* ---- AUTH NAV ---- */
+.nav-right{display:flex;align-items:center;gap:14px}
+.nav-auth{display:flex;align-items:center;gap:10px}
+.nav-btn-login{font-size:11px;font-family:var(--font-display);letter-spacing:1px;color:var(--text2);text-decoration:none;padding:7px 14px;border-radius:8px;border:.5px solid var(--border);transition:all .2s}
+.nav-btn-login:hover{color:var(--accent);border-color:var(--border2)}
+.nav-btn-register{font-size:11px;font-family:var(--font-display);letter-spacing:1px;color:var(--accent);text-decoration:none;padding:7px 14px;border-radius:8px;border:.5px solid rgba(79,195,247,.35);background:rgba(79,195,247,.10);transition:all .2s}
+.nav-btn-register:hover{background:rgba(79,195,247,.20);border-color:rgba(79,195,247,.5)}
+.nav-user{position:relative}
+.nav-user-toggle{display:flex;align-items:center;gap:8px;cursor:pointer;background:none;border:.5px solid var(--border);padding:6px 12px;border-radius:999px;font-family:var(--font-body);color:var(--text2);font-size:12px;transition:all .2s}
+.nav-user-toggle:hover{color:var(--accent);border-color:var(--border2)}
+.nav-user-avatar{width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));color:var(--bg);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:10px;font-weight:700}
+.nav-user-menu{position:absolute;top:calc(100% + 8px);right:0;background:var(--surface2);border:.5px solid var(--border2);border-radius:10px;padding:8px;min-width:210px;display:none;box-shadow:0 12px 40px rgba(0,0,0,.4);z-index:200}
+.nav-user-menu.open{display:block}
+.nav-user-menu .nu-head{padding:8px 12px 10px;border-bottom:.5px solid var(--border);margin-bottom:6px}
+.nav-user-menu .nu-name{font-size:13px;color:var(--text);font-weight:600}
+.nav-user-menu .nu-email{font-size:11px;color:var(--text3);margin-top:2px;word-break:break-all}
+.nav-user-menu a,.nav-user-menu button{display:block;width:100%;text-align:left;background:none;border:none;color:var(--text2);font-size:12px;padding:8px 12px;border-radius:7px;cursor:pointer;font-family:var(--font-body);text-decoration:none;transition:all .15s}
+.nav-user-menu a:hover,.nav-user-menu button:hover{background:rgba(79,195,247,.08);color:var(--accent)}
+.nav-user-menu .nu-danger:hover{background:rgba(255,82,82,.10);color:var(--red)}
+
 /* ---- RESPONSIVE ---- */
 @media(max-width:900px){
   .launches-grid,.detail-layout,.rockets-grid{grid-template-columns:1fr}
@@ -193,6 +213,7 @@ body{background:var(--bg);font-family:var(--font-body);color:var(--text);min-hei
   .fav-grid{grid-template-columns:1fr}
   .navbar{padding:0 16px}
   .hero-title{font-size:28px}
+  .nav-btn-register{display:none}
 }
 </style>
 </head>
@@ -207,9 +228,41 @@ body{background:var(--bg);font-family:var(--font-body);color:var(--text);min-hei
     <a href="{{ route('dashboard') }}"    class="nav-link {{ request()->routeIs('dashboard')       ? 'active' : '' }}">Dashboard</a>
     <a href="{{ route('launches.index') }}" class="nav-link {{ request()->routeIs('launches*')     ? 'active' : '' }}">Lanzamientos</a>
     <a href="{{ route('rockets.index') }}"  class="nav-link {{ request()->routeIs('rockets*')      ? 'active' : '' }}">Cohetes</a>
-    <a href="{{ route('favorites.index') }}" class="nav-link {{ request()->routeIs('favorites*')   ? 'active' : '' }}">Favoritos</a>
+    @auth
+      <a href="{{ route('favorites.index') }}" class="nav-link {{ request()->routeIs('favorites*')   ? 'active' : '' }}">Favoritos</a>
+    @endauth
   </div>
-  <span class="nav-badge">LIVE</span>
+
+  <div class="nav-right">
+    <span class="nav-badge">LIVE</span>
+
+    @auth
+      @php $u = auth()->user(); $initial = strtoupper(mb_substr($u->name, 0, 1)); @endphp
+      <div class="nav-user" id="navUser">
+        <button type="button" class="nav-user-toggle" onclick="document.getElementById('navUserMenu').classList.toggle('open')">
+          <span class="nav-user-avatar">{{ $initial }}</span>
+          <span>{{ \Illuminate\Support\Str::limit($u->name, 14) }}</span>
+          <span style="font-size:9px;color:var(--text3)">▼</span>
+        </button>
+        <div class="nav-user-menu" id="navUserMenu">
+          <div class="nu-head">
+            <div class="nu-name">{{ $u->name }}</div>
+            <div class="nu-email">{{ $u->email }}</div>
+          </div>
+          <a href="{{ route('favorites.index') }}">★ Mis favoritos</a>
+          <form method="POST" action="{{ route('logout') }}" style="margin:0">
+            @csrf
+            <button type="submit" class="nu-danger">⏻ Cerrar sesión</button>
+          </form>
+        </div>
+      </div>
+    @else
+      <div class="nav-auth">
+        <a href="{{ route('login') }}"    class="nav-btn-login">⏵ ACCEDER</a>
+        <a href="{{ route('register') }}" class="nav-btn-register">REGISTRO</a>
+      </div>
+    @endauth
+  </div>
 </nav>
 
 <main>
@@ -240,6 +293,15 @@ function updateCountdown() {
 }
 updateCountdown();
 setInterval(updateCountdown, 1000);
+
+// Close user menu when clicking outside
+document.addEventListener('click', function(e) {
+  const menu = document.getElementById('navUserMenu');
+  const user = document.getElementById('navUser');
+  if (menu && user && !user.contains(e.target)) {
+    menu.classList.remove('open');
+  }
+});
 </script>
 
 @yield('scripts')

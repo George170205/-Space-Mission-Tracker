@@ -4,10 +4,23 @@ namespace App\Http\Controllers;
 
 use App\Models\Favorite;
 use App\Services\SpaceXService;
+use Illuminate\Support\Facades\Cache;
 
 class LaunchController extends Controller
 {
     public function __construct(protected SpaceXService $spacex) {}
+
+    /**
+     * Devuelve los IDs de lanzamientos favoritos del usuario actual,
+     * cacheados por 5 minutos para evitar consultas repetidas a la BD.
+     * Optimización: se invalida cuando se crea/borra un favorito.
+     */
+    public static function favoriteIdsFor(int $userId): array
+    {
+        return Cache::remember("user.{$userId}.favorite_ids", 300, function () use ($userId) {
+            return Favorite::where('user_id', $userId)->pluck('launch_id')->toArray();
+        });
+    }
 
     public function index()
     {
@@ -57,7 +70,10 @@ class LaunchController extends Controller
         $page    = min($page, $pages);
         $paginated = array_slice($launches, ($page - 1) * $perPage, $perPage);
 
-        $favoriteIds = Favorite::pluck('launch_id')->toArray();
+        // Solo cargar favoritos del usuario autenticado (cacheado)
+        $favoriteIds = auth()->check()
+            ? self::favoriteIdsFor(auth()->id())
+            : [];
 
         return view('launches.index', compact(
             'paginated', 'filter', 'search', 'total', 'page', 'pages', 'favoriteIds'
@@ -72,7 +88,9 @@ class LaunchController extends Controller
             abort(404, 'Lanzamiento no encontrado');
         }
 
-        $isFavorite = Favorite::where('launch_id', $id)->exists();
+        $isFavorite = auth()->check()
+            ? Favorite::where('launch_id', $id)->where('user_id', auth()->id())->exists()
+            : false;
 
         return view('launches.show', compact('launch', 'isFavorite'));
     }

@@ -106,22 +106,27 @@
       </div>
       @endif
 
-      {{-- FAVORITE BUTTON --}}
-      @if(!$isFavorite)
-      <form method="POST" action="{{ route('favorites.store') }}">
-        @csrf
-        <input type="hidden" name="launch_id"    value="{{ $launch['id'] }}">
-        <input type="hidden" name="mission_name" value="{{ $launch['name'] ?? '' }}">
-        <input type="hidden" name="rocket_name"  value="{{ $rocket['name'] ?? '' }}">
-        <input type="hidden" name="launch_date"  value="{{ $dateStr }}">
-        <input type="hidden" name="launch_site"  value="{{ $pad['full_name'] ?? $pad['name'] ?? '' }}">
-        <input type="hidden" name="success"      value="{{ $success === true ? '1' : ($success === false ? '0' : '') }}">
-        <input type="hidden" name="status_label" value="{{ $bl }}">
-        <button type="submit" class="btn-primary" style="width:100%;justify-content:center;margin-bottom:10px">☆ Guardar en favoritos</button>
-      </form>
+      {{-- FAVORITE BUTTON (solo usuarios autenticados) --}}
+      @auth
+        @if(!$isFavorite)
+        <form method="POST" action="{{ route('favorites.store') }}">
+          @csrf
+          <input type="hidden" name="launch_id"    value="{{ $launch['id'] }}">
+          <input type="hidden" name="mission_name" value="{{ $launch['name'] ?? '' }}">
+          <input type="hidden" name="rocket_name"  value="{{ $rocket['name'] ?? '' }}">
+          <input type="hidden" name="launch_date"  value="{{ $dateStr }}">
+          <input type="hidden" name="launch_site"  value="{{ $pad['full_name'] ?? $pad['name'] ?? '' }}">
+          <input type="hidden" name="success"      value="{{ $success === true ? '1' : ($success === false ? '0' : '') }}">
+          <input type="hidden" name="status_label" value="{{ $bl }}">
+          <button type="submit" class="btn-primary" style="width:100%;justify-content:center;margin-bottom:10px">☆ Guardar en favoritos</button>
+        </form>
+        @else
+        <div class="btn-primary" style="width:100%;justify-content:center;margin-bottom:10px;opacity:.7;cursor:default">★ Ya en favoritos</div>
+        @endif
       @else
-      <div class="btn-primary" style="width:100%;justify-content:center;margin-bottom:10px;opacity:.7;cursor:default">★ Ya en favoritos</div>
-      @endif
+        <a href="{{ route('login') }}" class="btn-primary" style="width:100%;justify-content:center;margin-bottom:10px">⏵ Inicia sesión para guardar</a>
+        <div style="font-size:11px;color:var(--text3);text-align:center;margin-bottom:10px">Solo operadores registrados pueden hacer tracking de misiones</div>
+      @endauth
 
       @if(!empty($launch['links']['webcast']))
       <a href="{{ $launch['links']['webcast'] }}" target="_blank" class="btn-ghost" style="width:100%;justify-content:center">↗ Ver en YouTube</a>

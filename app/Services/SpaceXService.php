@@ -204,4 +204,44 @@ class SpaceXService
             return $dateUtc;
         }
     }
+
+    // ---------- PERFORMANCE / CACHE MANAGEMENT ----------
+
+    /**
+     * Lista de todas las claves cacheadas por este servicio.
+     *
+     * @return string[]
+     */
+    public function cacheKeys(): array
+    {
+        return [
+            'spacex.launches.all',
+            'spacex.launches.upcoming',
+            'spacex.launches.recent.3',
+            'spacex.launches.recent.6',
+            'spacex.rockets',
+            'spacex.stats',
+        ];
+    }
+
+    /**
+     * Borrar todas las claves del servicio.
+     * Útil para invalidar (cron, deploy, tests de rendimiento).
+     */
+    public function flushCache(): void
+    {
+        foreach ($this->cacheKeys() as $key) {
+            Cache::forget($key);
+        }
+    }
+
+    /**
+     * Medir el tiempo (ms) de una sola ejecución de un callable.
+     */
+    public function benchmark(callable $callable): float
+    {
+        $start = microtime(true);
+        $callable();
+        return (microtime(true) - $start) * 1000;
+    }
 }

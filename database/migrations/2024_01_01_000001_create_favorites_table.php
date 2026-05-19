@@ -10,7 +10,11 @@ return new class extends Migration
     {
         Schema::create('favorites', function (Blueprint $table) {
             $table->id();
-            $table->string('launch_id')->unique();         // ID de SpaceX
+
+            // Cada favorito pertenece a un usuario (los favoritos son personales)
+            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
+
+            $table->string('launch_id');                   // ID de SpaceX
             $table->string('mission_name');
             $table->string('rocket_name')->nullable();
             $table->string('launch_date')->nullable();
@@ -19,6 +23,10 @@ return new class extends Migration
             $table->string('status_label')->nullable();    // "Exitoso", "Fallido", "Próximo"
             $table->text('notes')->nullable();             // Notas personales
             $table->timestamps();
+
+            // Un mismo usuario no puede guardar el mismo launch dos veces
+            $table->unique(['user_id', 'launch_id'], 'favorites_user_launch_unique');
+            $table->index('launch_id');
         });
     }
 
